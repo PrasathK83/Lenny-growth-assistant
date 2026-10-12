@@ -56,7 +56,48 @@
     <div id="panel-preview" role="tabpanel" aria-labelledby="tab-preview">
       <iframe id="artifact-frame" title="Artifact preview" sandbox="" referrerpolicy="no-referrer"></iframe>
     </div>
-    <div id="panel-source" role="tabpanel" aria-labelledby="tab-source" hidden><pre id="artifact-source" tabindex="0"></pre></div>
+    <div id="panel-source" role="tabpanel" aria-labelledby="tab-source" hidden>
+      <div class="code-editor" id="code-editor">
+        <div class="code-editor-toolbar">
+          <div class="code-editor-tabs">
+            <span class="code-editor-tab active">
+              <span class="code-tab-icon" aria-hidden="true">&lt;/&gt;</span>
+              <span id="editor-filename">artifact.html</span>
+              <span class="code-tab-dot" aria-hidden="true"></span>
+            </span>
+          </div>
+          <div class="code-editor-tools">
+            <button class="editor-btn" id="editor-wrap-btn" type="button" title="Toggle line wrapping" aria-pressed="true">
+              <span class="editor-btn-icon" aria-hidden="true">↩</span>
+              <span>Wrap</span>
+            </button>
+            <button class="editor-btn" id="editor-copy-btn" type="button" title="Copy code to clipboard">
+              <span class="editor-btn-icon" aria-hidden="true">📋</span>
+              <span id="editor-copy-text">Copy</span>
+            </button>
+            <span class="editor-badge" id="editor-lang-badge">HTML5</span>
+          </div>
+        </div>
+        <div class="code-editor-body" id="code-editor-body">
+          <div class="code-editor-gutter" id="code-editor-gutter" aria-hidden="true"></div>
+          <pre id="artifact-source" class="code-editor-content" tabindex="0" spellcheck="false"></pre>
+        </div>
+        <div class="code-editor-statusbar">
+          <div class="statusbar-item">
+            <span id="editor-lines-count">0 lines</span>
+            <span class="statusbar-bullet" aria-hidden="true">•</span>
+            <span id="editor-chars-count">0 chars</span>
+          </div>
+          <div class="statusbar-item statusbar-meta">
+            <span>UTF-8</span>
+            <span class="statusbar-bullet" aria-hidden="true">•</span>
+            <span>Spaces: 2</span>
+            <span class="statusbar-bullet" aria-hidden="true">•</span>
+            <span class="statusbar-tag" id="editor-mode-badge">HTML Document</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </div>
 <script src="/assets/app.js"></script>

@@ -184,13 +184,57 @@ async function send(textOverride) {
 $("send").onclick = () => send();
 $("composer-input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
 
-/* ---------- artifact viewer ---------- */
+/* ---------- artifact viewer & code editor ---------- */
+function highlightHtmlCode(src) {
+  if (!src) return "";
+  let escaped = src.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  escaped = escaped.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="tok-comment">$1</span>');
+  escaped = escaped.replace(/(&lt;!DOCTYPE[\s\S]*?&gt;)/gi, '<span class="tok-doctype">$1</span>');
+  escaped = escaped.replace(/&lt;(\/?[a-zA-Z0-9\-]+)([\s\S]*?)&gt;/g, (match, tag, rest) => {
+    if (tag.startsWith("!--") || tag.toUpperCase().startsWith("!DOCTYPE")) return match;
+    const isClosing = tag.startsWith("/");
+    const tagName = isClosing ? tag.slice(1) : tag;
+    const tagOpen = `&lt;${isClosing ? "/" : ""}<span class="tok-tag-name">${tagName}</span>`;
+    const formattedRest = rest.replace(/([a-zA-Z0-9_\-:@.]+)(\s*=\s*)(".*?"|'.*?'|[^\s"'>=]+)?/g, (m, attr, eq, val) => {
+      let v = "";
+      if (val) v = `${eq}<span class="tok-val">${val}</span>`;
+      else if (eq) v = eq;
+      return `<span class="tok-attr">${attr}</span>${v}`;
+    });
+    return `<span class="tok-tag">${tagOpen}${formattedRest}&gt;</span>`;
+  });
+  return escaped;
+}
+
+function renderCodeEditor(content, type, title) {
+  const code = content || "";
+  const lines = code.split("\n");
+  const gutter = $("code-editor-gutter");
+  if (gutter) gutter.textContent = Array.from({ length: lines.length }, (_, i) => i + 1).join("\n");
+  const linesCountEl = $("editor-lines-count");
+  if (linesCountEl) linesCountEl.textContent = `${lines.length} lines`;
+  const charsCountEl = $("editor-chars-count");
+  if (charsCountEl) charsCountEl.textContent = `${code.length.toLocaleString()} chars`;
+
+  const ext = type === "html" ? ".html" : ".md";
+  const slug = (title || "artifact").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "artifact";
+  if ($("editor-filename")) $("editor-filename").textContent = slug + ext;
+  if ($("editor-lang-badge")) $("editor-lang-badge").textContent = type === "html" ? "HTML5" : "MARKDOWN";
+  if ($("editor-mode-badge")) $("editor-mode-badge").textContent = type === "html" ? "HTML Document" : "Markdown Doc";
+
+  const srcEl = $("artifact-source");
+  if (srcEl) {
+    if (type === "html") srcEl.innerHTML = highlightHtmlCode(code);
+    else srcEl.textContent = code;
+  }
+}
+
 async function openArtifact(id) {
   try {
     const a = await api("/api/artifacts/" + id); state.artifact = a;
     $("artifact-title").textContent = a.title; $("artifact-type").textContent = a.type;
     $("artifact-frame").srcdoc = a.render_document;   // sandbox="" => no scripts, unique origin, no forms/popups
-    $("artifact-source").textContent = a.content;
+    renderCodeEditor(a.content, a.type, a.title);
     $("artifact").hidden = false; $("app").classList.add("has-artifact"); setTab("preview");
   } catch (e) { showError(e); }
 }
@@ -212,6 +256,31 @@ $("artifact-copy").onclick = async () => {
   try { await navigator.clipboard.writeText(state.artifact.content); $("artifact-copy").textContent = "Copied"; } catch { $("artifact-copy").textContent = "Copy failed"; }
   setTimeout(() => ($("artifact-copy").textContent = "Copy"), 1500);
 };
+
+const wrapBtn = $("editor-wrap-btn");
+if (wrapBtn) {
+  wrapBtn.onclick = () => {
+    const body = $("code-editor-body");
+    const isNoWrap = body.classList.toggle("no-wrap");
+    wrapBtn.setAttribute("aria-pressed", String(!isNoWrap));
+    const label = wrapBtn.querySelector("span:not(.editor-btn-icon)");
+    if (label) label.textContent = isNoWrap ? "Unwrap" : "Wrap";
+  };
+}
+const editorCopyBtn = $("editor-copy-btn");
+if (editorCopyBtn) {
+  editorCopyBtn.onclick = async () => {
+    if (!state.artifact) return;
+    const txt = $("editor-copy-text");
+    try {
+      await navigator.clipboard.writeText(state.artifact.content);
+      if (txt) txt.textContent = "Copied ✓";
+    } catch {
+      if (txt) txt.textContent = "Failed";
+    }
+    setTimeout(() => { if (txt) txt.textContent = "Copy"; }, 1500);
+  };
+}
 $("artifact-download").onclick = async () => {
   if (!state.artifact) return;
   try {
